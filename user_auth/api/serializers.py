@@ -1,8 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     repeated_password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(required=True, allow_blank=False)
 
     class Meta:
         model = User
