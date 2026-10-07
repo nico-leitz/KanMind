@@ -1,0 +1,12 @@
+from rest_framework import permissions
+
+class IsOwnerOrMember(permissions.BasePermission):
+    
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'DELETE':
+            return obj.owner == request.user
+        
+        is_owner = obj.owner == request.user
+        is_member = obj.members.filter(id=request.user.id).exists()
+        
+        return is_owner or is_member
