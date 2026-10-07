@@ -17,3 +17,6 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Board.objects.filter(owner=self.request.user)
