@@ -31,6 +31,7 @@ class Task(models.Model):
     ]
 
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='tasks')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks', null=True, blank=True)
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='to-do')
