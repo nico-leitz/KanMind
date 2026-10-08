@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from kanmind_app.models import Board
+from kanmind_app.models import Board, Task
 
 class BoardSerializer(serializers.ModelSerializer):
     
@@ -20,3 +20,10 @@ class BoardSerializer(serializers.ModelSerializer):
 
     def get_tasks_high_prio_count(self, obj):
         return obj.tasks.filter(priority='high').count()
+
+
+class TaskSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Task
+        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer', 'due_date']
