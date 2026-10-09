@@ -20,6 +20,7 @@ class BoardListView(generics.ListCreateAPIView):
 class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = BoardSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrMember]
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
         return Board.objects.filter(
@@ -29,7 +30,7 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class TaskCreateView(generics.CreateAPIView):
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated, IsTaskMemberOrCreatorOrBoardOwner] 
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
