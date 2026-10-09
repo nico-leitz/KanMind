@@ -2,11 +2,11 @@ from django.db.models import Q
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from kanmind_app.models import Board, Task
-from .serializers import BoardSerializer, TaskSerializer
+from .serializers import BoardListSerializer, BoardDetailSerializer, TaskSerializer
 from .permissions import IsOwnerOrMember, IsTaskMemberOrCreatorOrBoardOwner
 
 class BoardListView(generics.ListCreateAPIView):
-    serializer_class = BoardSerializer
+    serializer_class = BoardListSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -18,7 +18,7 @@ class BoardListView(generics.ListCreateAPIView):
         serializer.save(owner=self.request.user)
 
 class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = BoardSerializer
+    serializer_class = BoardDetailSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrMember]
     http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
