@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from kanmind_app.models import Board, Task
 
-class BoardSerializer(serializers.ModelSerializer):
+class BoardListSerializer(serializers.ModelSerializer):
     
     ticket_count = serializers.SerializerMethodField()
     tasks_to_do_count = serializers.SerializerMethodField()
