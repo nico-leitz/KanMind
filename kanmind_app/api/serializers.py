@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from kanmind_app.models import Board, Task
+from kanmind_app.models import Board, Task, User
 from django.db.models import F
 
 class BoardListSerializer(serializers.ModelSerializer):
@@ -49,3 +49,12 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer', 'due_date']
+
+
+class EmailCheckSerializer(serializers.ModelSerializer):
+
+    fullname = serializers.CharField(source='username', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'fullname']
