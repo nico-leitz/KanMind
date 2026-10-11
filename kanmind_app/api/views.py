@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from kanmind_app.models import Board, Task
-from .serializers import BoardListSerializer, BoardDetailSerializer, TaskSerializer, EmailCheckSerializer
+from .serializers import BoardListSerializer, BoardDetailSerializer, BoardUpdateSerializer, TaskSerializer, EmailCheckSerializer
 from .permissions import IsOwnerOrMember, IsTaskMemberOrCreatorOrBoardOwner
 
 class BoardListView(generics.ListCreateAPIView):
@@ -28,6 +28,13 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Board.objects.filter(
             Q(owner=self.request.user) | Q(members=self.request.user)
         ).distinct()
+
+    def get_serializer_class(self):
+
+        if self.request.method == 'PATCH':
+            return BoardUpdateSerializer
+    
+        return BoardDetailSerializer
 
 
 class TaskCreateView(generics.CreateAPIView):
