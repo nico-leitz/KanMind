@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from kanmind_app.models import Board, Task, User
+from rest_framework.exceptions import PermissionDenied
 from django.db.models import F
 
 class BoardListSerializer(serializers.ModelSerializer):
@@ -71,11 +72,96 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
         return obj.members.values('id', 'email', fullname=F('username'))
 
 
-class TaskSerializer(serializers.ModelSerializer):
+class TaskCreateSerializer(serializers.ModelSerializer):
+    assignee_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='assignee', write_only=True, required=False, allow_null=True
+    )
+    reviewer_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='reviewer', write_only=True, required=False, allow_null=True
+    )
+    assignee = serializers.SerializerMethodField()
+    reviewer = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
-        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer', 'due_date']
+        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 
+                  'assignee_id', 'reviewer_id', 'assignee', 'reviewer', 'due_date', 'comment_count']
+
+    def get_assignee(self, obj):
+        if obj.assignee:
+            return {"id": obj.assignee.id, "email": obj.assignee.email, "fullname": obj.assignee.username}
+        return None
+
+    def get_reviewer(self, obj):
+        if obj.reviewer:
+            return {"id": obj.reviewer.id, "email": obj.reviewer.email, "fullname": obj.reviewer.username}
+        return None
+
+    def get_comment_count(self, obj):
+        return 0
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        board = attrs.get('board')
+        
+        if request and not (board.owner == request.user or board.members.filter(id=request.user.id).exists()):
+            raise PermissionDenied({"detail": "You must be a member of the board to create a task."})
+            
+        assignee = attrs.get('assignee')
+        reviewer = attrs.get('reviewer')
+        
+        if assignee and not (board.owner == assignee or board.members.filter(id=assignee.id).exists()):
+            raise serializers.ValidationError({"assignee_id": "The assignee must be a member of the board."})
+            
+        if reviewer and not (board.owner == reviewer or board.members.filter(id=reviewer.id).exists()):
+            raise serializers.ValidationError({"reviewer_id": "The reviewer must be a member of the board."})
+
+        return attrs
+
+
+class TaskUpdateSerializer(serializers.ModelSerializer):
+    assignee_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='assignee', write_only=True, required=False, allow_null=True
+    )
+    reviewer_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='reviewer', write_only=True, required=False, allow_null=True
+    )
+    assignee = serializers.SerializerMethodField()
+    reviewer = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 
+                  'assignee_id', 'reviewer_id', 'assignee', 'reviewer', 'due_date', 'comment_count']
+        read_only_fields = ['board']
+
+    def get_assignee(self, obj):
+        if obj.assignee:
+            return {"id": obj.assignee.id, "email": obj.assignee.email, "fullname": obj.assignee.username}
+        return None
+
+    def get_reviewer(self, obj):
+        if obj.reviewer:
+            return {"id": obj.reviewer.id, "email": obj.reviewer.email, "fullname": obj.reviewer.username}
+        return None
+
+    def get_comment_count(self, obj):
+        return 0
+
+    def validate(self, attrs):
+        board = self.instance.board
+        assignee = attrs.get('assignee')
+        reviewer = attrs.get('reviewer')
+        
+        if assignee and not (board.owner == assignee or board.members.filter(id=assignee.id).exists()):
+            raise serializers.ValidationError({"assignee_id": "The assignee must be a member of the board."})
+            
+        if reviewer and not (board.owner == reviewer or board.members.filter(id=reviewer.id).exists()):
+            raise serializers.ValidationError({"reviewer_id": "The reviewer must be a member of the board."})
+
+        return attrs
 
 
 class EmailCheckSerializer(serializers.ModelSerializer):
