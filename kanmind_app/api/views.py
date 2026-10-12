@@ -1,5 +1,6 @@
 from django.db.models import Q
 from rest_framework import generics
+from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -53,15 +54,9 @@ class EmailCheckView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        email = self.request.query_params.get('email')
+        email = self.request.query_params.get("email")
 
         if not email:
             raise ValidationError({"detail": "email parameter is missing."})
-
-        user = User.objects.filter(email=email).first()
-
-        if not user:
-            raise NotFound({"detail": "email could not be found."})
-
-        return user
+        return get_object_or_404(User, email=email)
 
