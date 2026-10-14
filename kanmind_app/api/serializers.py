@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from kanmind_app.models import Board, Task, User
+from kanmind_app.models import Board, Task, User, Comment
 from rest_framework.exceptions import PermissionDenied
 from django.db.models import F
 
@@ -163,6 +163,27 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
 
         return attrs
 
+
+class CommentListCreateSerializer(serializers.ModelSerializer):
+
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'created_at', 'author', 'content']
+        read_only_fields = ['author']
+
+    def get_author(self, obj):
+        if obj.author:
+            name = f"{obj.author.username}"
+            return name if name else obj.author.username
+        return None
+
+
+class CommentDeleteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
 
 class EmailCheckSerializer(serializers.ModelSerializer):
 
