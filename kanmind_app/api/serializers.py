@@ -10,10 +10,18 @@ class BoardListSerializer(serializers.ModelSerializer):
     tasks_high_prio_count = serializers.SerializerMethodField()
     member_count = serializers.SerializerMethodField()
 
+    owner_id = serializers.ReadOnlyField(source='owner.id') 
+
+    members = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=User.objects.all(), 
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = Board
-        fields = ['id', 'title', 'member_count', 'ticket_count', 'tasks_to_do_count', 'tasks_high_prio_count', 'owner']
-        read_only_fields = ['owner']
+        fields = ['id', 'title', 'member_count', 'ticket_count', 'tasks_to_do_count', 'tasks_high_prio_count', 'owner_id', 'members']
 
     def get_ticket_count(self, obj):
         return obj.tasks.count()
@@ -42,7 +50,8 @@ class BoardDetailSerializer(serializers.ModelSerializer):
         return obj.members.values('id', 'email', fullname=F('username'))
 
     def get_tasks(self, obj):
-        return 
+        tasks = obj.tasks.all()
+        return TaskUpdateSerializer(tasks, many=True).data
 
 
 class BoardUpdateSerializer(serializers.ModelSerializer):
