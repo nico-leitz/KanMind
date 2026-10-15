@@ -1,14 +1,14 @@
 from rest_framework import serializers
 from kanmind_app.models import Board, Task, User, Comment
 from rest_framework.exceptions import PermissionDenied
-from django.db.models import F
+from django.db.models import F, Count
 
 class BoardListSerializer(serializers.ModelSerializer):
     
-    ticket_count = serializers.SerializerMethodField()
-    tasks_to_do_count = serializers.SerializerMethodField()
-    tasks_high_prio_count = serializers.SerializerMethodField()
-    member_count = serializers.SerializerMethodField()
+    member_count = serializers.IntegerField(read_only=True)
+    ticket_count = serializers.IntegerField(read_only=True)
+    tasks_to_do_count = serializers.IntegerField(read_only=True)
+    tasks_high_prio_count = serializers.IntegerField(read_only=True)
 
     owner_id = serializers.ReadOnlyField(source='owner.id') 
 
@@ -21,19 +21,11 @@ class BoardListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Board
-        fields = ['id', 'title', 'member_count', 'ticket_count', 'tasks_to_do_count', 'tasks_high_prio_count', 'owner_id', 'members']
-
-    def get_ticket_count(self, obj):
-        return obj.tasks.count()
-
-    def get_tasks_to_do_count(self, obj):
-        return obj.tasks.filter(status='to-do').count()
-
-    def get_tasks_high_prio_count(self, obj):
-        return obj.tasks.filter(priority='high').count()
-
-    def get_member_count(self,obj):
-        return obj.members.count()
+        fields = [
+            'id', 'title', 'member_count', 'ticket_count', 
+            'tasks_to_do_count', 'tasks_high_prio_count', 
+            'owner_id', 'members'
+        ]
 
 
 class BoardDetailSerializer(serializers.ModelSerializer):
@@ -50,7 +42,9 @@ class BoardDetailSerializer(serializers.ModelSerializer):
         return obj.members.values('id', 'email', fullname=F('username'))
 
     def get_tasks(self, obj):
-        tasks = obj.tasks.all()
+        tasks = obj.tasks.select_related('assignee', 'reviewer').annotate(
+            comment_count=Count('comments', distinct=True)
+        )
         return TaskUpdateSerializer(tasks, many=True).data
 
 
@@ -82,6 +76,7 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
+    
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), source='assignee', write_only=True, required=False, allow_null=True
     )
@@ -108,7 +103,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         return None
 
     def get_comment_count(self, obj):
-        return 0
+        return getattr(obj, 'comment_count', obj.comments.count())
 
     def validate(self, attrs):
         request = self.context.get('request')
@@ -130,6 +125,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
 
 class TaskUpdateSerializer(serializers.ModelSerializer):
+    
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), source='assignee', write_only=True, required=False, allow_null=True
     )
@@ -157,7 +153,7 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
         return None
 
     def get_comment_count(self, obj):
-        return 0
+        return getattr(obj, 'comment_count', obj.comments.count())
 
     def validate(self, attrs):
         board = self.instance.board
@@ -193,6 +189,7 @@ class CommentDeleteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
+
 
 class EmailCheckSerializer(serializers.ModelSerializer):
 
