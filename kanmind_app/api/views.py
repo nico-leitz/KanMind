@@ -87,3 +87,19 @@ class EmailCheckView(generics.RetrieveAPIView):
             raise ValidationError({"detail": "email parameter is missing."})
         return get_object_or_404(User, email=email)
 
+
+class TaskAssignedToMeListView(generics.ListAPIView):
+    serializer_class = TaskUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Task.objects.filter(assignee=self.request.user)
+
+
+class TaskReviewingListView(generics.ListAPIView):
+    serializer_class = TaskUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Task.objects.filter(reviewer=self.request.user)
+
