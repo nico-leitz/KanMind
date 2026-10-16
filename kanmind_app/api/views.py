@@ -73,10 +73,9 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         """
         Limits the accessible boards to those owned by or joined by the user.
+        (Updated to .all() to allow permission classes to throw 403 instead of 404)
         """
-        return Board.objects.filter(
-            Q(owner=self.request.user) | Q(members=self.request.user)
-        ).distinct()
+        return Board.objects.all()
 
     def get_serializer_class(self):
         """
@@ -106,7 +105,7 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     API view to update or delete a specific task.
     """
     queryset = Task.objects.select_related('assignee', 'reviewer').annotate(
-        comment_count=Count('comments', distinct=True)
+        comments_count=Count('comments', distinct=True)
     )
     serializer_class = TaskUpdateSerializer
     permission_classes = [IsAuthenticated, IsTaskMemberOrCreatorOrBoardOwner]
@@ -181,7 +180,7 @@ class TaskAssignedToMeListView(generics.ListAPIView):
         Filters tasks specifically by the assignee field.
         """
         return Task.objects.select_related('assignee', 'reviewer').annotate(
-            comment_count=Count('comments', distinct=True)
+            comments_count=Count('comments', distinct=True)
         ).filter(assignee=self.request.user)
 
 
@@ -197,5 +196,5 @@ class TaskReviewingListView(generics.ListAPIView):
         Filters tasks specifically by the reviewer field.
         """
         return Task.objects.select_related('assignee', 'reviewer').annotate(
-            comment_count=Count('comments', distinct=True)
+            comments_count=Count('comments', distinct=True)
         ).filter(reviewer=self.request.user)
