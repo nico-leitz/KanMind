@@ -34,13 +34,14 @@ class BoardDetailSerializer(serializers.ModelSerializer):
     """
     Serializer for retrieving detailed board information including tasks and members.
     """
+    owner_id = serializers.ReadOnlyField(source='owner.id')
     members = serializers.SerializerMethodField()
     tasks = serializers.SerializerMethodField()
 
     class Meta:
         model = Board
-        fields = ['id', 'title', 'owner', 'members', 'tasks']
-        read_only_fields = ['owner']
+        fields = ['id', 'title', 'owner_id', 'members', 'tasks']
+        read_only_fields = ['owner_id']
 
     def get_members(self, obj):
         """
@@ -53,7 +54,7 @@ class BoardDetailSerializer(serializers.ModelSerializer):
         Returns all tasks associated with this board using the TaskUpdateSerializer.
         """
         tasks = obj.tasks.select_related('assignee', 'reviewer').annotate(
-            comment_count=Count('comments', distinct=True)
+            comments_count=Count('comments', distinct=True)
         )
         return TaskUpdateSerializer(tasks, many=True).data
 
@@ -105,12 +106,12 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     )
     assignee = serializers.SerializerMethodField()
     reviewer = serializers.SerializerMethodField()
-    comment_count = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
         fields = ['id', 'board', 'title', 'description', 'status', 'priority', 
-                  'assignee_id', 'reviewer_id', 'assignee', 'reviewer', 'due_date', 'comment_count']
+                  'assignee_id', 'reviewer_id', 'assignee', 'reviewer', 'due_date', 'comments_count'] # ANPASSUNG
 
     def get_assignee(self, obj):
         """
@@ -128,11 +129,11 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             return {"id": obj.reviewer.id, "email": obj.reviewer.email, "fullname": obj.reviewer.username}
         return None
 
-    def get_comment_count(self, obj):
+    def get_comments_count(self, obj):
         """
         Returns the total number of comments associated with the task.
         """
-        return getattr(obj, 'comment_count', obj.comments.count())
+        return getattr(obj, 'comments_count', obj.comments.count())
 
     def validate(self, attrs):
         """
@@ -168,12 +169,12 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
     )
     assignee = serializers.SerializerMethodField()
     reviewer = serializers.SerializerMethodField()
-    comment_count = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
         fields = ['id', 'board', 'title', 'description', 'status', 'priority', 
-                  'assignee_id', 'reviewer_id', 'assignee', 'reviewer', 'due_date', 'comment_count']
+                  'assignee_id', 'reviewer_id', 'assignee', 'reviewer', 'due_date', 'comments_count'] # ANPASSUNG
         read_only_fields = ['board']
 
     def get_assignee(self, obj):
@@ -192,11 +193,11 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
             return {"id": obj.reviewer.id, "email": obj.reviewer.email, "fullname": obj.reviewer.username}
         return None
 
-    def get_comment_count(self, obj):
+    def get_comments_count(self, obj):
         """
         Returns the total number of comments associated with the task.
         """
-        return getattr(obj, 'comment_count', obj.comments.count())
+        return getattr(obj, 'comments_count', obj.comments.count())
 
     def validate(self, attrs):
         """
